@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sara AI Chat</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="chat-container" id="chat-container">
+      <header class="chat-header">
+        <div class="brand">
+          <span class="status-dot" aria-hidden="true"></span>
+          <h1>SARA <span>AI ASSISTANT</span></h1>
+        </div>
+        <div class="header-actions">
+          <button id="voice-toggle" class="voice-toggle" type="button" aria-pressed="false">🔇 VOICE: OFF</button>
+          <span id="connection-status" class="connection-status">CONNECTING</span>
+        </div>
+      </header>
+
+      <section id="chat-messages" class="chat-messages" aria-live="polite" aria-label="Chat messages">
+        <div class="message assistant-message">
+          <strong>Sara</strong>
+          <p>Hi! I’m ready to help. Connect an AI backend to start chatting.</p>
+        </div>
+      </section>
+
+      <form class="chat-form" onsubmit="return false">
+        <input id="user-input" type="text" placeholder="Type a message…" aria-label="Your message" autocomplete="off" />
