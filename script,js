@@ -1,0 +1,95 @@
+const chatContainer = document.getElementById('chat-container');
+const messages = document.getElementById('chat-messages');
+const input = document.getElementById('user-input');
+const sendButton = document.getElementById('send-button');
+const voiceToggle = document.getElementById('voice-toggle');
+const status = document.getElementById('connection-status');
+
+let voiceEnabled = false;
+
+function appendMessage(sender, text, className) {
+  const message = document.createElement('div');
+  message.className = `message ${className}`;
+
+  const label = document.createElement('strong');
+  label.textContent = sender;
+  const content = document.createElement('p');
+  content.textContent = text;
+
+  message.append(label, content);
+  messages.appendChild(message);
+  messages.scrollTop = messages.scrollHeight;
+  return message;
+}
+
+function setBusy(busy) {
+  sendButton.disabled = busy;
+  input.disabled = busy;
+  sendButton.textContent = busy ? 'SENDING…' : 'SEND';
+}
+
+async function sendMessage() {
+  const text = input.value.trim();
+  if (!text || sendButton.disabled) return;
+
+  appendMessage('You', text, 'user-message');
+  input.value = '';
+  setBusy(true);
+  const pending = appendMessage('Sara', 'Connecting…', 'assistant-message pending');
+
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: text })
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data.error || `Chat service returned ${response.status}`);
+    }
+    if (typeof data.reply !== 'string' || !data.reply.trim()) {
+      throw new Error('The chat service returned no reply.');
+    }
+
+    pending.remove();
+    appendMessage('Sara', data.reply, 'assistant-message');
+    if (voiceEnabled && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(new SpeechSynthesisUtterance(data.reply));
+    }
+  } catch (error) {
+    pending.remove();
+    appendMessage(
+      'Connection notice',
+      `Chat service error: ${error.message}. Check that the Vercel deployment is active and GEMINI_API_KEY is set in its environment variables.`,
+      'notice-message'
+    );
+    console.error('Chat request failed:', error);
+  } finally {
+    setBusy(false);
+    input.focus();
+  }
+}
+
+sendButton.addEventListener('click', sendMessage);
+input.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') sendMessage();
+});
+
+voiceToggle.addEventListener('click', () => {
+  voiceEnabled = !voiceEnabled;
+  voiceToggle.textContent = voiceEnabled ? '🔊 VOICE: ON' : '🔇 VOICE: OFF';
+  voiceToggle.setAttribute('aria-pressed', String(voiceEnabled));
+  if (!voiceEnabled && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel();
+  }
+});
+
+if (!window.speechSynthesis) {
+  voiceToggle.disabled = true;
+  voiceToggle.title = 'Speech playback is not supported by this browser.';
+}
+
+if (status) status.textContent = 'UI READY · AI BACKEND REQUIRED';
+if (chatContainer) chatContainer.setAttribute('aria-label', 'Sara chat');
